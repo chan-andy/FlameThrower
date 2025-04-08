@@ -414,6 +414,28 @@ class FlameUI:
         )
         self.save_button.grid(row=3, column=2, columnspan=2, padx=5, pady=2)
         
+        # Create Delay Settings frame
+        delay_frame = ttk.LabelFrame(self.main_frame, text="Delay Settings", padding="5")
+        delay_frame.grid(row=2, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        
+        # Action delay
+        ttk.Label(delay_frame, text="Action Delay:").grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+        self.action_delay_var = tk.StringVar(value="0.5")
+        ttk.Entry(delay_frame, textvariable=self.action_delay_var, width=5).grid(row=0, column=1, padx=5, pady=2)
+        
+        # Parse delay
+        ttk.Label(delay_frame, text="Parse Delay:").grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
+        self.parse_delay_var = tk.StringVar(value="1.5")
+        ttk.Entry(delay_frame, textvariable=self.parse_delay_var, width=5).grid(row=0, column=3, padx=5, pady=2)
+        
+        # Save button for delay settings
+        self.save_delay_button = ttk.Button(
+            delay_frame,
+            text="Save Delays",
+            command=self._on_save_delay_settings
+        )
+        self.save_delay_button.grid(row=0, column=4, padx=5, pady=2)
+        
     def _on_threshold_toggle(self, stat):
         """Enable/disable threshold entry based on checkbox state"""
         if self.threshold_vars[stat].get():
@@ -468,6 +490,37 @@ class FlameUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save settings: {str(e)}")
             
+    def _on_save_delay_settings(self):
+        """Save the current delay settings"""
+        try:
+            # Validate and save delay settings
+            parse_delay = float(self.parse_delay_var.get())
+            action_delay = float(self.action_delay_var.get())
+            
+            if parse_delay <= 0 or action_delay <= 0:
+                messagebox.showerror("Error", "Delay values must be positive")
+                return
+                
+            # Save settings to file
+            import json
+            with open("flame_settings.json", "r") as f:
+                settings = json.load(f)
+                
+            settings["delays"] = {
+                "parse": parse_delay,
+                "action": action_delay
+            }
+            
+            with open("flame_settings.json", "w") as f:
+                json.dump(settings, f, indent=4)
+                
+            messagebox.showinfo("Success", "Delay settings saved successfully!")
+            
+        except ValueError:
+            messagebox.showerror("Error", "Invalid delay values")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save delay settings: {str(e)}")
+            
     def _load_settings(self):
         """Load settings from file"""
         try:
@@ -505,6 +558,12 @@ class FlameUI:
                 self.top_var.set(str(region["top"]))
                 self.right_var.set(str(region["right"]))
                 self.bottom_var.set(str(region["bottom"]))
+                
+            # Load delay settings
+            if "delays" in settings:
+                delays = settings["delays"]
+                self.parse_delay_var.set(str(delays["parse"]))
+                self.action_delay_var.set(str(delays["action"]))
                 
         except Exception as e:
             print(f"Error loading settings: {str(e)}")
@@ -697,6 +756,10 @@ class FlameUI:
         
         print(f"Starting click sequence at ({x}, {y})")
         
+        # Get delay values from UI
+        parse_delay = float(self.parse_delay_var.get())
+        action_delay = float(self.action_delay_var.get())
+        
         # Move cursor to position
         current_x, current_y = win32api.GetCursorPos()
         print(f"Current cursor position: ({current_x}, {current_y})")
@@ -716,20 +779,19 @@ class FlameUI:
                 try:
                     # Try to bring window to front
                     win32gui.SetForegroundWindow(window)
-                    time.sleep(0.5)
+                    time.sleep(action_delay)
                     
                     # Try to restore window if minimized
                     if win32gui.IsIconic(window):
                         win32gui.ShowWindow(window, win32con.SW_RESTORE)
-                        time.sleep(0.5)
+                        time.sleep(action_delay)
                 except Exception as e:
                     print(f"Warning: Could not set window focus: {str(e)}")
                     # Continue anyway, as the window might already be focused
             
-            # Send mouse down event
-            print("Sending mouse down event...")
-            self.interception.click(x, y, button="left", delay=0.5)
-            time.sleep(0.5)
+            # Perform click using interception.press
+            print("Sending mouse click...")
+            self.interception.click(x, y, button="left", delay=action_delay)
             
             # Press Enter twice
             print("Pressing Enter twice...")
@@ -743,11 +805,11 @@ class FlameUI:
                 # Release Enter
                 print("Sending Enter key up...")
                 self.interception.key_up('enter')
-                time.sleep(0.5)
+                time.sleep(action_delay)
                 
             # Wait for flame animation
             print("Waiting for flame animation...")
-            time.sleep(1.5)
+            time.sleep(parse_delay)
             
             # Take screenshot and parse results
             try:
