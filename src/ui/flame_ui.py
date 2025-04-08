@@ -140,11 +140,11 @@ class FlameUI:
         self._create_results_display()
         
         # Add some padding at the bottom
-        ttk.Label(self.main_frame, text="").grid(row=8, column=0, pady=5)
+        ttk.Label(self.main_frame, text="").grid(row=11, column=0, pady=5)
         
         # Buttons frame
         self.buttons_frame = ttk.Frame(self.main_frame)
-        self.buttons_frame.grid(row=9, column=0, columnspan=2, pady=10, sticky=tk.EW)
+        self.buttons_frame.grid(row=12, column=0, columnspan=2, pady=10, sticky=tk.EW)
         
         # Test Screenshot button
         self.test_button = ttk.Button(
@@ -178,7 +178,7 @@ class FlameUI:
         
         # Add status label
         self.status_label = ttk.Label(self.main_frame, text="")
-        self.status_label.grid(row=10, column=0, columnspan=2, pady=5)
+        self.status_label.grid(row=13, column=0, columnspan=2, pady=5)
         
         # Add keyboard interrupt flag
         self.should_stop = False
@@ -248,11 +248,46 @@ class FlameUI:
         )
         self.check_position_button.grid(row=0, column=5, padx=5)
         
+        # Add some padding at the bottom
+        ttk.Label(self.main_frame, text="").grid(row=9, column=0, pady=5)
+        
+        # Buttons frame
+        self.buttons_frame = ttk.Frame(self.main_frame)
+        self.buttons_frame.grid(row=10, column=0, columnspan=2, pady=10, sticky=tk.EW)
+        
+        # Test Screenshot button
+        self.test_button = ttk.Button(
+            self.buttons_frame,
+            text="Test Screenshot",
+            command=self._on_test_screenshot
+        )
+        self.test_button.pack(side=tk.LEFT, padx=5)
+        
+        # Select Region button
+        self.select_region_button = ttk.Button(
+            self.buttons_frame,
+            text="Select Region",
+            command=self._on_select_region
+        )
+        self.select_region_button.pack(side=tk.LEFT, padx=5)
+        
+        # Roll button
+        self.start_button = ttk.Button(
+            self.buttons_frame,
+            text="Roll",
+            command=self._on_start_clicked
+        )
+        self.start_button.pack(side=tk.RIGHT, padx=5)
+        
+        # Add status label
+        self.status_label = ttk.Label(self.main_frame, text="")
+        self.status_label.grid(row=12, column=0, columnspan=2, pady=5)
+        
     def _create_results_display(self):
         """Create the results display frame"""
         # Results frame
         results_frame = ttk.LabelFrame(self.main_frame, text="Results", padding="5")
-        results_frame.grid(row=7, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        results_frame.grid(row=11, column=0, columnspan=2, sticky=tk.EW, pady=5)
         
         # Create text widget for results
         self.results_text = tk.Text(results_frame, height=8, width=40, wrap=tk.WORD)
