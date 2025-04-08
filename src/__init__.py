@@ -1,0 +1,3 @@
+"""
+MapleStory automation package
+""" 
