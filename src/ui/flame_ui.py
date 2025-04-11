@@ -127,8 +127,9 @@ class FlameUI:
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Flame type selection
-        self._create_flame_type_selector()
+        # Configure grid weights
+        self.main_frame.grid_columnconfigure(0, weight=1)  # Left column
+        self.main_frame.grid_columnconfigure(1, weight=1)  # Right column
         
         # Threshold inputs
         self._create_threshold_inputs()
@@ -136,39 +137,11 @@ class FlameUI:
         # Region adjustment frame
         self._create_region_adjustment()
         
-        # Results display frame
-        self._create_results_display()
+        # Instructions and Results display frames
+        self._create_right_column()
         
         # Add some padding at the bottom
         ttk.Label(self.main_frame, text="").grid(row=11, column=0, pady=5)
-        
-        # Buttons frame
-        self.buttons_frame = ttk.Frame(self.main_frame)
-        self.buttons_frame.grid(row=12, column=0, columnspan=2, pady=10, sticky=tk.EW)
-        
-        # Test Screenshot button
-        self.test_button = ttk.Button(
-            self.buttons_frame,
-            text="Test Screenshot",
-            command=self._on_test_screenshot
-        )
-        self.test_button.pack(side=tk.LEFT, padx=5)
-        
-        # Select Region button
-        self.select_region_button = ttk.Button(
-            self.buttons_frame,
-            text="Select Region",
-            command=self._on_select_region
-        )
-        self.select_region_button.pack(side=tk.LEFT, padx=5)
-        
-        # Roll button
-        self.start_button = ttk.Button(
-            self.buttons_frame,
-            text="Roll",
-            command=self._on_start_clicked
-        )
-        self.start_button.pack(side=tk.RIGHT, padx=5)
         
         # Preview window
         self.preview_window = None
@@ -192,224 +165,68 @@ class FlameUI:
         self.style.configure('Running.TButton', foreground='red')
         self.style.configure('Normal.TButton', foreground='black')
         
-    def _create_region_adjustment(self):
-        """Create controls for adjusting the capture region"""
-        # Region adjustment frame
-        region_frame = ttk.LabelFrame(self.main_frame, text="Capture Region Adjustment", padding="5")
-        region_frame.grid(row=7, column=0, columnspan=2, sticky=tk.EW, pady=5)
+    def _create_right_column(self):
+        """Create the right column containing instructions and results"""
+        # Instructions frame
+        instructions_frame = ttk.LabelFrame(self.main_frame, text="Instructions", padding="5")
+        instructions_frame.grid(row=0, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
-        # Left adjustment
-        ttk.Label(region_frame, text="Left:").grid(row=0, column=0, padx=2)
-        self.left_var = tk.StringVar(value="0.44")
-        ttk.Entry(region_frame, textvariable=self.left_var, width=5).grid(row=0, column=1, padx=2)
+        # Create instructions text
+        instructions = [
+            "1. Manually roll a flame first to bring up Flame Result UI in game.",
+            "2. Select Region to select the 'Result' window of the flame",
+            "3. Test Screenshot to ensure it captures and extracts the current result properly.",
+            "4. 'Set Reroll Position' to save cursor position of where the 'Reroll' button is in game.",
+            "5. Set Thresholds and Delay settings."
+        ]
         
-        # Top adjustment
-        ttk.Label(region_frame, text="Top:").grid(row=0, column=2, padx=2)
-        self.top_var = tk.StringVar(value="0.5")
-        ttk.Entry(region_frame, textvariable=self.top_var, width=5).grid(row=0, column=3, padx=2)
+        # Add each instruction as a label
+        for i, instruction in enumerate(instructions):
+            ttk.Label(instructions_frame, text=instruction, wraplength=400).pack(padx=5, pady=2, anchor=tk.W)
         
-        # Right adjustment
-        ttk.Label(region_frame, text="Right:").grid(row=0, column=4, padx=2)
-        self.right_var = tk.StringVar(value="0.56")
-        ttk.Entry(region_frame, textvariable=self.right_var, width=5).grid(row=0, column=5, padx=2)
+        # Results display frame
+        results_frame = ttk.LabelFrame(self.main_frame, text="Results", padding="5")
+        results_frame.grid(row=1, column=1, rowspan=6, sticky=(tk.N, tk.S, tk.E, tk.W), pady=5, padx=(10, 0))
         
-        # Bottom adjustment
-        ttk.Label(region_frame, text="Bottom:").grid(row=0, column=6, padx=2)
-        self.bottom_var = tk.StringVar(value="0.66")
-        ttk.Entry(region_frame, textvariable=self.bottom_var, width=5).grid(row=0, column=7, padx=2)
+        # Configure results frame to expand vertically
+        results_frame.grid_rowconfigure(0, weight=1)
         
-        # Reroll position frame
-        position_frame = ttk.LabelFrame(self.main_frame, text="Reroll Position", padding="5")
-        position_frame.grid(row=8, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        # Create text widget for results
+        self.results_text = tk.Text(results_frame, height=6, width=50, wrap=tk.WORD)
+        self.results_text.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        self.results_text.insert(1.0, "Results will appear here...")
+        self.results_text.config(state=tk.DISABLED)  # Make it read-only
         
-        # X position
-        ttk.Label(position_frame, text="X:").grid(row=0, column=0, padx=2)
-        self.x_var = tk.StringVar(value="0.5")
-        ttk.Entry(position_frame, textvariable=self.x_var, width=5).grid(row=0, column=1, padx=2)
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.results_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.results_text.config(yscrollcommand=scrollbar.set)
         
-        # Y position
-        ttk.Label(position_frame, text="Y:").grid(row=0, column=2, padx=2)
-        self.y_var = tk.StringVar(value="0.5")
-        ttk.Entry(position_frame, textvariable=self.y_var, width=5).grid(row=0, column=3, padx=2)
-        
-        # Set Position button
-        self.set_position_button = ttk.Button(
-            position_frame,
-            text="Set Reroll Position",
-            command=self._on_set_position
-        )
-        self.set_position_button.grid(row=0, column=4, padx=5)
-        
-        # Check Position button
-        self.check_position_button = ttk.Button(
-            position_frame,
-            text="Check Position",
-            command=self._on_check_position
-        )
-        self.check_position_button.grid(row=0, column=5, padx=5)
-        
-        # Add some padding at the bottom
-        ttk.Label(self.main_frame, text="").grid(row=9, column=0, pady=5)
-        
-        # Buttons frame
-        self.buttons_frame = ttk.Frame(self.main_frame)
-        self.buttons_frame.grid(row=10, column=0, columnspan=2, pady=10, sticky=tk.EW)
-        
-        # Test Screenshot button
-        self.test_button = ttk.Button(
-            self.buttons_frame,
-            text="Test Screenshot",
-            command=self._on_test_screenshot
-        )
-        self.test_button.pack(side=tk.LEFT, padx=5)
-        
-        # Select Region button
-        self.select_region_button = ttk.Button(
-            self.buttons_frame,
-            text="Select Region",
-            command=self._on_select_region
-        )
-        self.select_region_button.pack(side=tk.LEFT, padx=5)
+        # Create buttons frame under results
+        buttons_frame = ttk.Frame(results_frame)
+        buttons_frame.pack(pady=5)
         
         # Roll button
         self.start_button = ttk.Button(
-            self.buttons_frame,
+            buttons_frame,
             text="Roll",
             command=self._on_start_clicked
         )
-        self.start_button.pack(side=tk.RIGHT, padx=5)
+        self.start_button.pack(side=tk.LEFT, padx=5)
         
-        # Add status label
-        self.status_label = ttk.Label(self.main_frame, text="")
-        self.status_label.grid(row=12, column=0, columnspan=2, pady=5)
-        
-    def _create_results_display(self):
-        """Create the results display frame"""
-        # Results frame
-        results_frame = ttk.LabelFrame(self.main_frame, text="Results", padding="5")
-        results_frame.grid(row=11, column=0, columnspan=2, sticky=tk.EW, pady=5)
-        
-        # Create text widget for results
-        self.results_text = tk.Text(results_frame, height=8, width=40, wrap=tk.WORD)
-        self.results_text.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-        self.results_text.config(state=tk.DISABLED)
-        
-    def _update_results_display(self, results):
-        """Update the results display with new data"""
-        self.results_text.config(state=tk.NORMAL)
-        self.results_text.delete(1.0, tk.END)
-        
-        if results:
-            # Format the results text
-            text = "Extracted Stats:\n"
-            
-            # Add each stat with proper formatting
-            for stat, value in results['stats'].items():
-                if stat == 'STATS%':
-                    text += f"All Stats: {value}\n"
-                else:
-                    text += f"{stat}: {value}\n"
-            
-            # Add attack and CP increases if present
-            if results['attack_increase'] is not None:
-                text += f"Attack Increase: {results['attack_increase']}\n"
-            if results['cp_increase'] is not None:
-                text += f"CP Increase: {results['cp_increase']}\n"
-            
-            # Add raw OCR text at the bottom
-            text += f"\nRaw OCR text:\n{results['raw_text']}"
-        else:
-            text = "No results available"
-            
-        self.results_text.insert(1.0, text)
-        self.results_text.config(state=tk.DISABLED)
-        
-    def _on_select_region(self):
-        """Open the region selector window"""
-        try:
-            print("Starting region selection...")
-            
-            # Get the MapleStory window
-            window = self.controller.window_manager.get_window("MapleStory")
-            if not window:
-                print("Could not find MapleStory window")
-                messagebox.showerror("Error", "Could not find MapleStory window. Make sure MapleStory is running.")
-                return
-            
-            print(f"Found MapleStory window: {window}")
-            
-            # Get the window rectangle
-            window_rect = self.controller.window_manager.get_window_rect(window)
-            if not window_rect:
-                print("Could not get window rectangle")
-                messagebox.showerror("Error", "Could not get window dimensions")
-                return
-                
-            print(f"Window rectangle: {window_rect}")
-            
-            # Get the client rectangle for relative coordinates
-            if 'client' not in window_rect:
-                print("No client rectangle in window info")
-                messagebox.showerror("Error", "Could not get client area dimensions")
-                return
-                
-            client_rect = window_rect['client']
-            width = client_rect[2] - client_rect[0]
-            height = client_rect[3] - client_rect[1]
-            
-            print(f"Client rectangle: {client_rect}")
-            print(f"Client dimensions: {width}x{height}")
-            
-            def on_region_selected(region):
-                try:
-                    print(f"Region selected: {region}")
-                    
-                    # Convert absolute coordinates to relative
-                    rel_left = (region['left'] - client_rect[0]) / width
-                    rel_top = (region['top'] - client_rect[1]) / height
-                    rel_right = (region['right'] - client_rect[0]) / width
-                    rel_bottom = (region['bottom'] - client_rect[1]) / height
-                    
-                    print(f"Relative coordinates: left={rel_left}, top={rel_top}, right={rel_right}, bottom={rel_bottom}")
-                    
-                    # Update the input fields
-                    self.left_var.set(f"{rel_left:.3f}")
-                    self.top_var.set(f"{rel_top:.3f}")
-                    self.right_var.set(f"{rel_right:.3f}")
-                    self.bottom_var.set(f"{rel_bottom:.3f}")
-                    
-                    # Update the flame processor's region
-                    self._update_region_coordinates()
-                    
-                except Exception as e:
-                    print(f"Error in region selection callback: {str(e)}")
-                    messagebox.showerror("Error", f"Failed to process selected region: {str(e)}")
-            
-            # Create and run the region selector
-            print("Creating region selector...")
-            selector = RegionSelector(on_region_selected, window_rect, self.root)
-            print("Running region selector...")
-            selector.run()
-            
-        except Exception as e:
-            print(f"Error in region selection: {str(e)}")
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
-        
-    def _create_flame_type_selector(self):
-        ttk.Label(self.main_frame, text="Flame Type:").grid(row=0, column=0, sticky=tk.W)
-        self.flame_type = tk.StringVar(value="Res/Rainbow Flame")
-        flame_types = ["Res/Rainbow Flame", "Black Flame (WIP)"]
-        ttk.Combobox(
-            self.main_frame,
-            textvariable=self.flame_type,
-            values=flame_types,
-            state="readonly"
-        ).grid(row=0, column=1, sticky=tk.W, pady=5)
+        # Force Stop button
+        self.stop_button = ttk.Button(
+            buttons_frame,
+            text="Force Stop",
+            command=self._on_force_stop
+        )
+        self.stop_button.pack(side=tk.LEFT, padx=5)
         
     def _create_threshold_inputs(self):
-        # Create frame for threshold controls
+        """Create the threshold inputs section"""
+        # Threshold frame
         threshold_frame = ttk.LabelFrame(self.main_frame, text="Threshold Settings", padding="5")
-        threshold_frame.grid(row=1, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        threshold_frame.grid(row=0, column=0, sticky=tk.EW, pady=5)
         
         # Create checkboxes and entries for each stat
         self.thresholds = {}
@@ -451,7 +268,7 @@ class FlameUI:
         
         # Create Delay Settings frame
         delay_frame = ttk.LabelFrame(self.main_frame, text="Delay Settings", padding="5")
-        delay_frame.grid(row=2, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        delay_frame.grid(row=1, column=0, sticky=tk.EW, pady=5)
         
         # Action delay
         ttk.Label(delay_frame, text="Action Delay:").grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
@@ -1317,6 +1134,193 @@ class FlameUI:
         except Exception as e:
             print(f"Error checking position: {str(e)}")
             messagebox.showerror("Error", f"An error occurred: {str(e)}")
+        
+    def _create_region_adjustment(self):
+        """Create controls for adjusting the capture region"""
+        # Region adjustment frame
+        region_frame = ttk.LabelFrame(self.main_frame, text="Capture Region Adjustment", padding="5")
+        region_frame.grid(row=2, column=0, sticky=tk.EW, pady=5)
+        
+        # Left adjustment
+        ttk.Label(region_frame, text="Left:").grid(row=0, column=0, padx=2)
+        self.left_var = tk.StringVar(value="0.44")
+        ttk.Entry(region_frame, textvariable=self.left_var, width=5).grid(row=0, column=1, padx=2)
+        
+        # Top adjustment
+        ttk.Label(region_frame, text="Top:").grid(row=0, column=2, padx=2)
+        self.top_var = tk.StringVar(value="0.5")
+        ttk.Entry(region_frame, textvariable=self.top_var, width=5).grid(row=0, column=3, padx=2)
+        
+        # Right adjustment
+        ttk.Label(region_frame, text="Right:").grid(row=0, column=4, padx=2)
+        self.right_var = tk.StringVar(value="0.56")
+        ttk.Entry(region_frame, textvariable=self.right_var, width=5).grid(row=0, column=5, padx=2)
+        
+        # Bottom adjustment
+        ttk.Label(region_frame, text="Bottom:").grid(row=0, column=6, padx=2)
+        self.bottom_var = tk.StringVar(value="0.66")
+        ttk.Entry(region_frame, textvariable=self.bottom_var, width=5).grid(row=0, column=7, padx=2)
+        
+        # Test Screenshot button
+        self.test_button = ttk.Button(
+            region_frame,
+            text="Test Screenshot",
+            command=self._on_test_screenshot
+        )
+        self.test_button.grid(row=1, column=0, columnspan=4, pady=5)
+        
+        # Select Region button
+        self.select_region_button = ttk.Button(
+            region_frame,
+            text="Select Region",
+            command=self._on_select_region
+        )
+        self.select_region_button.grid(row=1, column=4, columnspan=4, pady=5)
+        
+        # Reroll position frame
+        position_frame = ttk.LabelFrame(self.main_frame, text="Reroll Position", padding="5")
+        position_frame.grid(row=3, column=0, sticky=tk.EW, pady=5)
+        
+        # X position
+        ttk.Label(position_frame, text="X:").grid(row=0, column=0, padx=2)
+        self.x_var = tk.StringVar(value="0.5")
+        ttk.Entry(position_frame, textvariable=self.x_var, width=5).grid(row=0, column=1, padx=2)
+        
+        # Y position
+        ttk.Label(position_frame, text="Y:").grid(row=0, column=2, padx=2)
+        self.y_var = tk.StringVar(value="0.5")
+        ttk.Entry(position_frame, textvariable=self.y_var, width=5).grid(row=0, column=3, padx=2)
+        
+        # Set Position button
+        self.set_position_button = ttk.Button(
+            position_frame,
+            text="Set Reroll Position",
+            command=self._on_set_position
+        )
+        self.set_position_button.grid(row=0, column=4, padx=5)
+        
+        # Check Position button
+        self.check_position_button = ttk.Button(
+            position_frame,
+            text="Check Position",
+            command=self._on_check_position
+        )
+        self.check_position_button.grid(row=0, column=5, padx=5)
+        
+        # Add some padding at the bottom
+        ttk.Label(self.main_frame, text="").grid(row=4, column=0, pady=5)
+        
+        # Add status label
+        self.status_label = ttk.Label(self.main_frame, text="")
+        self.status_label.grid(row=12, column=0, pady=5)
+        
+    def _on_select_region(self):
+        """Handle select region button click"""
+        try:
+            print("Starting region selection...")
+            
+            # Get the MapleStory window
+            window = self.controller.window_manager.get_window("MapleStory")
+            if not window:
+                print("Could not find MapleStory window")
+                messagebox.showerror("Error", "Could not find MapleStory window. Make sure MapleStory is running.")
+                return
+            
+            print(f"Found MapleStory window: {window}")
+            
+            # Get the window rectangle
+            window_rect = self.controller.window_manager.get_window_rect(window)
+            if not window_rect:
+                print("Could not get window rectangle")
+                messagebox.showerror("Error", "Could not get window dimensions")
+                return
+                
+            print(f"Window rectangle: {window_rect}")
+            
+            # Get the client rectangle for relative coordinates
+            if 'client' not in window_rect:
+                print("No client rectangle in window info")
+                messagebox.showerror("Error", "Could not get client area dimensions")
+                return
+                
+            client_rect = window_rect['client']
+            width = client_rect[2] - client_rect[0]
+            height = client_rect[3] - client_rect[1]
+            
+            print(f"Client rectangle: {client_rect}")
+            print(f"Client dimensions: {width}x{height}")
+            
+            def on_region_selected(region):
+                try:
+                    print(f"Region selected: {region}")
+                    
+                    # Convert absolute coordinates to relative
+                    rel_left = (region['left'] - client_rect[0]) / width
+                    rel_top = (region['top'] - client_rect[1]) / height
+                    rel_right = (region['right'] - client_rect[0]) / width
+                    rel_bottom = (region['bottom'] - client_rect[1]) / height
+                    
+                    print(f"Relative coordinates: left={rel_left}, top={rel_top}, right={rel_right}, bottom={rel_bottom}")
+                    
+                    # Update the input fields
+                    self.left_var.set(f"{rel_left:.3f}")
+                    self.top_var.set(f"{rel_top:.3f}")
+                    self.right_var.set(f"{rel_right:.3f}")
+                    self.bottom_var.set(f"{rel_bottom:.3f}")
+                    
+                except Exception as e:
+                    print(f"Error in region selection callback: {str(e)}")
+                    messagebox.showerror("Error", f"Failed to process selected region: {str(e)}")
+            
+            # Create and run the region selector
+            print("Creating region selector...")
+            selector = RegionSelector(on_region_selected, window_rect, self.root)
+            print("Running region selector...")
+            selector.run()
+            
+        except Exception as e:
+            print(f"Error in region selection: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+        
+    def _update_results_display(self, results):
+        """Update the results display with new results"""
+        self.results_text.config(state=tk.NORMAL)
+        self.results_text.delete(1.0, tk.END)
+        
+        if results:
+            # Format the results text
+            text = "Extracted Stats:\n"
+            
+            # Add each stat with proper formatting
+            for stat, value in results['stats'].items():
+                if stat == 'STATS%':
+                    text += f"All Stats: {value}\n"
+                else:
+                    text += f"{stat}: {value}\n"
+            
+            # Add attack and CP increases if present
+            if results['attack_increase'] is not None:
+                text += f"Attack Increase: {results['attack_increase']}\n"
+            if results['cp_increase'] is not None:
+                text += f"CP Increase: {results['cp_increase']}\n"
+            
+            # Add raw OCR text at the bottom
+            text += f"\nRaw OCR text:\n{results['raw_text']}"
+        else:
+            text = "No results available"
+            
+        self.results_text.insert(1.0, text)
+        self.results_text.config(state=tk.DISABLED)
+        
+    def _on_force_stop(self):
+        """Handle force stop button click"""
+        if self.is_animating:
+            print("Force stopping roll process...")
+            self.should_stop = True
+            self.status_label.config(text="Force stopping roll process...")
+            self.root.update()  # Force UI update
+        else:
+            print("No roll process running")
         
     def run(self):
         self.root.mainloop()
