@@ -6,10 +6,8 @@ A Python-based tool to assist with rerolling flames in MapleStory. This tool aut
 
 - Automatic flame rolling with customizable thresholds
 - Real-time result tracking and display
-- Support for Res/Rainbow Flames (Black Flame WIP)
 - Configurable capture region and reroll position
 - Visual feedback during the rolling process
-- Ability to stop the process at any time with ESC key (WIP)
 
 ## Requirements
 
@@ -48,7 +46,6 @@ python src/main.py
 ```
 
 2. Configure the settings:
-   - Select the flame type (Res/Rainbow Flame or Black Flame (WIP))
    - Set your desired thresholds for each stat
    - Configure the number of tries
    - Set the capture region and reroll position
@@ -56,12 +53,10 @@ python src/main.py
 3. Click "Roll" to start the process:
    - The button will turn red and show "Running"
    - A status message will appear at the bottom
-   - Press ESC at any time to stop the process (WIP)
 
 4. Monitor the results:
    - Results are displayed in real-time
    - The process will stop automatically if thresholds are met
-   - You can manually stop the process with ESC (WIP)
 
 ## Configuration
 
